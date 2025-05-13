@@ -1,0 +1,1 @@
+// For theme configuration in styled-components
