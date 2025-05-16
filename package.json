@@ -1,0 +1,27 @@
+{
+  "name": "hackaton-hetic-2025-frontend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:extension": "npm --workspace apps/extension run dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mathieusouflis/hackaton-hetic-2025-Frontend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mathieusouflis/hackaton-hetic-2025-Frontend/issues"
+  },
+  "homepage": "https://github.com/mathieusouflis/hackaton-hetic-2025-Frontend#readme",
+  "description": "",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

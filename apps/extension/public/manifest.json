@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Mon Extension Chrome",
+  "version": "1.0.0",
+  "description": "Une extension Chrome avec React + Vite",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": [],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
