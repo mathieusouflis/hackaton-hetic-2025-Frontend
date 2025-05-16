@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 
 /**
- * InfiniteBoard : Un board infini façon Miro/Figma avec pan (drag/scroll) et zoom (molette/pinch).
+ * InfiniteBoard : Un board infini façon Figma/Miro avec pan (drag/scroll) et zoom (molette/pinch).
  * Prêt à accueillir des cards ou éléments interactifs.
  */
 const MIN_SCALE = 0.2;
@@ -18,6 +18,8 @@ export default function InfiniteBoard() {
   const velocity = useRef({ x: 0, y: 0 });
   const inertiaFrame = useRef<number | null>(null);
   const wheelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // --- SMART GRID LOGIC (Miro/Figma style) ---
 
   // Empêche le zoom navigateur lors du pinch trackpad (Safari/Chrome Mac) et applique un zoom custom sur le board
   useEffect(() => {
@@ -119,7 +121,7 @@ export default function InfiniteBoard() {
   const handleWheel = (e: React.WheelEvent) => {
     stopInertia(); // Stop inertia on new wheel
     // Pinch-to-zoom (trackpad) or wheel+ctrl (browser zoom gesture)
-    if (e.ctrlKey) {
+    if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       // Calculate zoom factor
       let newScale = scale - e.deltaY * SCALE_STEP * 0.01;
@@ -164,27 +166,74 @@ export default function InfiniteBoard() {
     }, 40); // 40ms after last wheel event
   };
 
-  // --- GRID LOGIC ---
-  const baseGridSize = 40;
-  const gridSize = baseGridSize * scale;
-  const gridStyle = {
-    position: "absolute" as const,
-    inset: 0,
-    zIndex: 0,
-    pointerEvents: "none" as const,
-    backgroundColor: "#f3f4f6",
-    backgroundImage: `
-      linear-gradient(to right, #d1d5db 1px, transparent 1px),
-      linear-gradient(to bottom, #d1d5db 1px, transparent 1px)
-    `,
-    backgroundSize: `${gridSize}px ${gridSize}px`,
-    backgroundPosition: `${offset.x % gridSize}px ${offset.y % gridSize}px`,
-  };
+  // Placeholder card data: logical board positions (in board units, e.g., px)
+  const cards = [
+    { id: 1, x: 0, y: 0, label: "Card 1" },
+    { id: 2, x: 400, y: 200, label: "Card 2" },
+    // Add more cards as needed
+  ];
+
+  // Canvas grid ref
+  const gridCanvasRef = useRef<HTMLCanvasElement>(null);
+  // Board size (should match min-w/min-h)
+  const boardSize = 5000;
+
+  // Draw grid on canvas when offset/scale changes
+  /* useEffect(() => {
+    const canvas = gridCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    // HiDPI support
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = boardSize * dpr;
+    canvas.height = boardSize * dpr;
+    canvas.style.width = `${boardSize}px`;
+    canvas.style.height = `${boardSize}px`;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(dpr, dpr);
+
+    // --- Minimalist GRID LOGIC ---
+    const gridSize = 40; // px
+    // Offset for grid lines (centered)
+    const ox = (offset.x % gridSize) + boardSize / 2;
+    const oy = (offset.y % gridSize) + boardSize / 2;
+
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 1;
+    // Vertical lines
+    for (let x = ox; x < boardSize; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, boardSize);
+      ctx.stroke();
+    }
+    for (let x = ox - gridSize; x > 0; x -= gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, boardSize);
+      ctx.stroke();
+    }
+    // Horizontal lines
+    for (let y = oy; y < boardSize; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(boardSize, y);
+      ctx.stroke();
+    }
+    for (let y = oy - gridSize; y > 0; y -= gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(boardSize, y);
+      ctx.stroke();
+    }
+  }, [offset, scale]);*/
 
   return (
     <div
       ref={boardRef}
-      className="fixed inset-0 w-full h-full overflow-hidden cursor-grab select-none bg-neutral-100"
+      className="fixed inset-0 w-full h-full overflow-hidden bg-neutral-100 cursor-grab select-none"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -193,20 +242,41 @@ export default function InfiniteBoard() {
       tabIndex={0}
     >
       <div
-        className="absolute left-1/2 top-1/2 min-w-[2000px] min-h-[2000px] flex items-center justify-center"
+        className="absolute left-1/2 top-1/2 min-w-[5000px] min-h-[5000px] flex items-center justify-center"
         style={{
           transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-          transition: dragging
-            ? "none"
-            : "transform 0.15s cubic-bezier(.4,0,.2,1)",
+          transition: "none", // No transition for instant feedback
         }}
       >
-        {/* Grid background, moves and zooms with content */}
-        <div style={gridStyle} />
-        {/* Placeholder pour les cards */}
-        <div className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg z-10 flex items-center justify-center text-gray-400">
+        {/* Canvas grid under cards */}
+        <canvas
+          ref={gridCanvasRef}
+          width={boardSize}
+          height={boardSize}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+        {/* Render cards at their logical board positions */}
+        {cards.map((card) => (
+          <div
+            key={card.id}
+            className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 shadow"
+            style={{
+              transform: `translate(${card.x}px, ${card.y}px)`,
+            }}
+          >
+            {card.label}
+          </div>
+        ))}
+        {/* Placeholder for board center */}
+        {/* <div className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
           Board infini
-        </div>
+        </div> */}
       </div>
     </div>
   );
