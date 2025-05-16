@@ -1,9 +1,7 @@
+import InfiniteBoard from "@/components/InfiniteBoard";
+
 function App() {
-  return (
-    <>
-      <h1>Hello World</h1>
-    </>
-  );
+  return <InfiniteBoard />;
 }
 
 export default App;
