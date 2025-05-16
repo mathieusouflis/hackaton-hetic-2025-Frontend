@@ -26,6 +26,7 @@
   ],
   "dependencies": {
     "@tailwindcss/vite": "^4.1.7",
+    "lucide-react": "^0.511.0",
     "tailwindcss": "^4.1.7"
   },
   "devDependencies": {
