@@ -356,7 +356,7 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
                   description={card.text ?? ""}
                   tags={card.tags ?? []}
                   url={card.url ?? ""}
-                  images={card.img ? [card.img] : []}
+                  img={card.img ?? ""}
                 />
               </div>
             );
