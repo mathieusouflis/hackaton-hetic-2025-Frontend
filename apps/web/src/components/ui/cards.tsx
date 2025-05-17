@@ -1,7 +1,15 @@
 import React from "react";
 import { Link } from "lucide-react";
 
-function Cards({ title, description, tags, url, images = [] }) {
+interface CardsProps {
+  title: string;
+  description: string;
+  tags: string[];
+  url: string;
+  images?: string[];
+}
+
+function Cards({ title, description, tags, url, images = [] }: CardsProps) {
   // Check if we have images
   const hasImages = images && images.length > 0;
 

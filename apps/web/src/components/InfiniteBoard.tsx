@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from "react";
 import Cards from "./ui/cards";
 import { useGetBoard } from "@/hooks/useGetBoard";
 
-
 /**
  * InfiniteBoard : Un board infini façon Figma/Miro avec pan (drag/scroll) et zoom (molette/pinch).
  * Prêt à accueillir des cards ou éléments interactifs.
@@ -10,7 +9,6 @@ import { useGetBoard } from "@/hooks/useGetBoard";
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 2.5;
 const SCALE_STEP = 0.08;
-const TAGS = ["fdd", "ds", "dgf"];
 
 interface InfiniteBoardProps {
   boardName: string | null;
@@ -27,20 +25,11 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
   const inertiaFrame = useRef<number | null>(null);
   const wheelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cards state, fetched per board
-  const [cards, setCards] = useState<
-    { id: number; x: number; y: number; label: string }[]
-  >([]);
-
   // Fetch real cards if boardId is present
   const { cards: fetchedCards, loading, error } = useGetBoard(boardName ?? "");
 
   // Generate honeycomb/hex grid if no board is selected (demo)
   useEffect(() => {
-    if (boardName) {
-      setCards([]);
-      return;
-    }
     // Hex grid params
     const cardWidth = 128;
     const cardHeight = 128;
@@ -62,7 +51,6 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
         count++;
       }
     }
-    setCards(hexCards);
   }, [boardName]);
 
   // --- SMART GRID LOGIC (Miro/Figma style) ---
@@ -317,32 +305,34 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
           }}
         />
         {/* Render cards at their logical board positions */}
-        {boardName
-          ? fetchedCards.map((card, idx) => (
-              <div
-                key={card.id}
-                className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 shadow transition-transform duration-200 hover:scale-110"
-                style={{
-                  // Spread cards out in a grid for now (replace with real positions if available)
-                  transform: `translate(${(idx % 5) * 150}px, ${
-                    Math.floor(idx / 5) * 150
-                  }px)`,
-                }}
-              >
-                {card.title || card.text || card.url}
-              </div>
-            ))
-          : cards.map((card) => (
-              <div
-                key={card.id}
-                className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 shadow transition-transform duration-200 hover:scale-110"
-                style={{
-                  transform: `translate(${card.x}px, ${card.y}px)`,
-                }}
-              >
-                {card.label}
-              </div>
-            ))}
+        {boardName ? (
+          fetchedCards.map((card, idx) => (
+            <div
+              key={card.id}
+              style={{
+                // Spread cards out in a grid for now (replace with real positions if available)
+                transform: `translate(${(idx % 5) * 350}px, ${
+                  Math.floor(idx / 5) * 350
+                }px)`,
+                position: "absolute",
+              }}
+            >
+              <Cards
+                title={card.title ?? ""}
+                description={card.text ?? ""}
+                tags={card.tags ?? []}
+                url={card.url ?? ""}
+                images={card.img ? [card.img] : []}
+              />
+            </div>
+          ))
+        ) : (
+          <div className="flex items-center justify-center w-full h-full">
+            <div className="bg-white bg-opacity-80 px-6 py-4 rounded-lg shadow text-gray-500 text-lg font-medium">
+              Select a board to display cards.
+            </div>
+          </div>
+        )}
         {/* Placeholder for board center */}
         {/* <div className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
           Board infini
