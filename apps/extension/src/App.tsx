@@ -269,7 +269,7 @@ function App() {
                 Ajouter une image
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-full">
+            <DialogContent className="flex flex-col w-full">
               <DialogHeader>
                 <DialogTitle>Ajouter une image</DialogTitle>
               </DialogHeader>
