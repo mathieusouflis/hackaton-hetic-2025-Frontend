@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
+import Cards from "./ui/cards";
 import { useGetBoard } from "@/hooks/useGetBoard";
+
 
 /**
  * InfiniteBoard : Un board infini façon Figma/Miro avec pan (drag/scroll) et zoom (molette/pinch).
@@ -8,6 +10,7 @@ import { useGetBoard } from "@/hooks/useGetBoard";
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 2.5;
 const SCALE_STEP = 0.08;
+const TAGS = ["fdd", "ds", "dgf"];
 
 interface InfiniteBoardProps {
   boardName: string | null;
@@ -343,6 +346,13 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
         {/* Placeholder for board center */}
         {/* <div className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
           Board infini
+        </div>
+        <Cards
+          title="lksfghiusdfgh"
+          description="gfdgdfg"
+          tags={TAGS}
+          url="youtube.com"
+        />
         </div> */}
       </div>
     </div>
