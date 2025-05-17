@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { useGetBoard } from "@/hooks/useGetBoard";
 
 /**
  * InfiniteBoard : Un board infini façon Figma/Miro avec pan (drag/scroll) et zoom (molette/pinch).
@@ -8,7 +9,11 @@ const MIN_SCALE = 0.2;
 const MAX_SCALE = 2.5;
 const SCALE_STEP = 0.08;
 
-export default function InfiniteBoard() {
+interface InfiniteBoardProps {
+  boardName: string | null;
+}
+
+export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -18,6 +23,44 @@ export default function InfiniteBoard() {
   const velocity = useRef({ x: 0, y: 0 });
   const inertiaFrame = useRef<number | null>(null);
   const wheelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cards state, fetched per board
+  const [cards, setCards] = useState<
+    { id: number; x: number; y: number; label: string }[]
+  >([]);
+
+  // Fetch real cards if boardId is present
+  const { cards: fetchedCards, loading, error } = useGetBoard(boardName ?? "");
+
+  // Generate honeycomb/hex grid if no board is selected (demo)
+  useEffect(() => {
+    if (boardName) {
+      setCards([]);
+      return;
+    }
+    // Hex grid params
+    const cardWidth = 128;
+    const cardHeight = 128;
+    const spacingX = cardWidth * 0.9;
+    const spacingY = cardHeight * 0.78;
+    const hexCards = [];
+    let id = 1;
+    let count = 0;
+    for (let row = 0; row < 10 && count < 10; row++) {
+      for (let col = 0; col < 10 && count < 10; col++) {
+        const x = col * spacingX + (row % 2 === 1 ? spacingX / 2 : 0);
+        const y = row * spacingY;
+        hexCards.push({
+          id: id++,
+          x,
+          y,
+          label: `App ${id - 1}`,
+        });
+        count++;
+      }
+    }
+    setCards(hexCards);
+  }, [boardName]);
 
   // --- SMART GRID LOGIC (Miro/Figma style) ---
 
@@ -166,13 +209,6 @@ export default function InfiniteBoard() {
     }, 40); // 40ms after last wheel event
   };
 
-  // Placeholder card data: logical board positions (in board units, e.g., px)
-  const cards = [
-    { id: 1, x: 0, y: 0, label: "Card 1" },
-    { id: 2, x: 400, y: 200, label: "Card 2" },
-    // Add more cards as needed
-  ];
-
   // Canvas grid ref
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
   // Board size (should match min-w/min-h)
@@ -241,6 +277,22 @@ export default function InfiniteBoard() {
       onWheel={handleWheel}
       tabIndex={0}
     >
+      {/* Show loading message when fetching cards */}
+      {boardName && loading && (
+        <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-white bg-opacity-80 px-6 py-4 rounded-lg shadow text-gray-500 text-lg font-medium">
+            Loading board...
+          </div>
+        </div>
+      )}
+      {/* Show error message if there is an error */}
+      {boardName && error && (
+        <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-red-100 bg-opacity-90 px-6 py-4 rounded-lg shadow text-red-600 text-lg font-medium">
+            Error loading board: {error.message}
+          </div>
+        </div>
+      )}
       <div
         className="absolute left-1/2 top-1/2 min-w-[5000px] min-h-[5000px] flex items-center justify-center"
         style={{
@@ -262,17 +314,32 @@ export default function InfiniteBoard() {
           }}
         />
         {/* Render cards at their logical board positions */}
-        {cards.map((card) => (
-          <div
-            key={card.id}
-            className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 shadow"
-            style={{
-              transform: `translate(${card.x}px, ${card.y}px)`,
-            }}
-          >
-            {card.label}
-          </div>
-        ))}
+        {boardName
+          ? fetchedCards.map((card, idx) => (
+              <div
+                key={card.id}
+                className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 shadow transition-transform duration-200 hover:scale-110"
+                style={{
+                  // Spread cards out in a grid for now (replace with real positions if available)
+                  transform: `translate(${(idx % 5) * 150}px, ${
+                    Math.floor(idx / 5) * 150
+                  }px)`,
+                }}
+              >
+                {card.title || card.text || card.url}
+              </div>
+            ))
+          : cards.map((card) => (
+              <div
+                key={card.id}
+                className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 shadow transition-transform duration-200 hover:scale-110"
+                style={{
+                  transform: `translate(${card.x}px, ${card.y}px)`,
+                }}
+              >
+                {card.label}
+              </div>
+            ))}
         {/* Placeholder for board center */}
         {/* <div className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
           Board infini
