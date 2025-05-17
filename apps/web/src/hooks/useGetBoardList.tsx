@@ -21,7 +21,7 @@ export const useGetBoardList = () => {
     const fetchBoards = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5005/api/board");
+        const response = await fetch("http://localhost:5005/api/boards");
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
