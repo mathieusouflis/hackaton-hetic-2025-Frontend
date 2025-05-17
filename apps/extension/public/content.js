@@ -338,7 +338,7 @@ window.addEventListener("keydown", async (e) => {
       overlay.style.width = "100vw";
       overlay.style.height = "100vh";
       overlay.style.border = "none";
-      overlay.style.background = "rgba(0,0,0,0.5)";
+      overlay.style.background = "transparent";
       overlay.style.zIndex = "2147483647";
       overlay.id = "custom-modal-overlay";
       document.body.appendChild(overlay);

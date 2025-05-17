@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 import { Textarea } from "./components/ui/textarea";
 import {
@@ -16,7 +16,6 @@ import {
   X,
   Tag,
   Loader2,
-  Upload,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -48,14 +47,11 @@ function App() {
   const [currentUrl, setCurrentUrl] = useState<string>("");
   const [tags, setTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState<string>("");
-  const [images, setImages] = useState<string[]>([]);
   const [isAddingTag, setIsAddingTag] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string>("");
-  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [boards, setBoards] = useState<{ id: string; name: string }[]>([]);
   const [selectedBoard, setSelectedBoard] = useState<string>("");
   const [boardsLoading, setBoardsLoading] = useState<boolean>(true);
@@ -70,7 +66,7 @@ function App() {
           { active: true, currentWindow: true },
           function (tabs) {
             if (tabs[0] && tabs[0].url) {
-              setCurrentUrl(new URL(tabs[0].url).hostname);
+              setCurrentUrl(tabs[0].url);
             }
           }
         );
@@ -144,7 +140,7 @@ function App() {
         text: selectedText,
         note: note,
         tags: tags,
-        images: images,
+        image: imageUrl,
         url: currentUrl,
         date: new Date().toISOString(),
         board_name: selectedBoard,
@@ -206,86 +202,27 @@ function App() {
 
   const handleAddImage = () => {
     if (imageUrl.trim()) {
-      const urls = imageUrl
-        .split(/[\n,]/)
-        .map((url) => url.trim())
-        .filter((url) => url.length > 0);
-
-      if (urls.length > 0) {
-        setImages([...images, ...urls]);
-        setImageUrl("");
-        setIsImageDialogOpen(false);
-      }
+      setImageUrl(imageUrl.trim());
+      setIsImageDialogOpen(false);
     }
   };
 
-  const handleRemoveImage = (index: number) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
-    setImages(newImages);
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsUploading(true);
-
-    const fileReadPromises: Promise<string>[] = [];
-
-    Array.from(files).forEach((file) => {
-      const promise = new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-          if (e.target && typeof e.target.result === "string") {
-            resolve(e.target.result);
-          } else {
-            reject(new Error("Erreur lors de la lecture du fichier"));
-          }
-        };
-
-        reader.onerror = () => {
-          reject(new Error("Erreur lors de la lecture du fichier"));
-        };
-
-        reader.readAsDataURL(file);
-      });
-
-      fileReadPromises.push(promise);
-    });
-
-    Promise.all(fileReadPromises)
-      .then((results) => {
-        setImages([...images, ...results]);
-        setIsImageDialogOpen(false);
-      })
-      .catch((error) => {
-        console.error("Erreur lors de la lecture des fichiers:", error);
-      })
-      .finally(() => {
-        setIsUploading(false);
-      });
-  };
-
-  const triggerFileInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+  const handleRemoveImage = () => {
+    setImageUrl("");
   };
 
   return (
     <>
-      <Card>
+      <Card className="w-lg flex flex-col">
         <CardHeader className="w-full flex flex-row justify-end">
           <Button variant="ghost" onClick={handleCancel}>
             <X className="bg-blend-difference" />
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-3">
           <div className="flex flex-row gap-1.5 h-full w-full items-start">
             <div className="w-px h-full bg-zinc-900"></div>
-            <p className="max-w-full max-h-[7lh] overflow-y-auto">
+            <p className="max-w-full max-h-[3.5lh] overflow-y-auto text-left text-lg">
               {selectedText}
             </p>
           </div>
@@ -326,52 +263,28 @@ function App() {
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full mt-4">
                 <ImagePlus className="mr-2 h-4 w-4" />
-                Ajouter des images
+                Ajouter une image
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Ajouter des images</DialogTitle>
+                <DialogTitle>Ajouter une image</DialogTitle>
               </DialogHeader>
               <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Button
-                    onClick={triggerFileInput}
-                    variant="secondary"
-                    className="w-full"
-                    disabled={isUploading}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {isUploading ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      "Importer des fichiers"
-                    )}
-                  </Button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept="image/*"
-                    multiple
-                    className="hidden"
+                <div>
+                  <p className="mb-2 text-sm text-gray-400">
+                    Insérer l'URL d'une image
+                  </p>
+                  <Textarea
+                    placeholder="URL de l'image"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    rows={2}
                   />
-                  <div className="col-span-2">
-                    <p className="mb-2 text-sm text-gray-400">
-                      ou insérer une ou plusieurs URLs (séparées par des
-                      virgules ou sauts de ligne)
-                    </p>
-                    <Textarea
-                      placeholder="URL des images (une par ligne ou séparées par des virgules)"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
                 </div>
                 <Button
                   onClick={handleAddImage}
-                  disabled={isSending || isUploading}
+                  disabled={isSending || !imageUrl.trim()}
                 >
                   {isSending ? <Loader2 className="animate-spin" /> : "Ajouter"}
                 </Button>
@@ -379,44 +292,20 @@ function App() {
             </DialogContent>
           </Dialog>
           <div className="mt-4">
-            {images.length > 0 && (
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-sm font-medium">
-                    {images.length} image{images.length > 1 ? "s" : ""}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {images.map((img, index) => (
-                    <div
-                      key={index}
-                      className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
-                      onClick={() => setFullscreenImage(img)}
-                    >
-                      <img
-                        src={img}
-                        alt={`Image ${index + 1}`}
-                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <span className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">
-                          Cliquez pour agrandir
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 bg-black/30 hover:bg-black/50"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveImage(index);
-                        }}
-                      >
-                        <X className="h-4 w-4 text-white" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+            {imageUrl && (
+              <div className="flex items-center gap-2">
+                <img
+                  src={imageUrl}
+                  alt="Image ajoutée"
+                  className="w-24 h-24 object-cover rounded-lg"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRemoveImage}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             )}
           </div>
@@ -461,13 +350,9 @@ function App() {
       {fullscreenImage && (
         <ImageFullscreen
           image={fullscreenImage}
-          images={images}
           onClose={() => setFullscreenImage(null)}
-          onNavigate={(img) => setFullscreenImage(img)}
         />
       )}
-
-      {/* La version précédente du modal a été remplacée par le composant ImageFullscreen */}
     </>
   );
 }
