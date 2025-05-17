@@ -56,6 +56,7 @@ function App() {
   const [selectedBoard, setSelectedBoard] = useState<string>("");
   const [boardsLoading, setBoardsLoading] = useState<boolean>(true);
   const [boardsError, setBoardsError] = useState<string | null>(null);
+  const [customBoard, setCustomBoard] = useState<string>("");
 
   const APIURL = "http://localhost:5005/api/";
 
@@ -281,7 +282,8 @@ function App() {
                     placeholder="URL de l'image"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    rows={2}
+                    rows={1}
+                    className="resize-none h-10"
                   />
                 </div>
                 <Button
@@ -340,6 +342,32 @@ function App() {
                     {board.name}
                   </DropdownMenuItem>
                 ))}
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1 flex flex-col gap-1">
+                  <Input
+                    placeholder="Nom personnalisé..."
+                    value={customBoard}
+                    onChange={e => setCustomBoard(e.target.value)}
+                    className="text-sm"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && customBoard.trim()) {
+                        setSelectedBoard(customBoard.trim());
+                        setCustomBoard("");
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    className="mt-1"
+                    disabled={!customBoard.trim()}
+                    onClick={() => {
+                      setSelectedBoard(customBoard.trim());
+                      setCustomBoard("");
+                    }}
+                  >
+                    Utiliser ce nom
+                  </Button>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button onClick={handleSave} disabled={isSending || !selectedBoard}>
