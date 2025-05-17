@@ -18,7 +18,7 @@ function Cards({ title, description, tags = [], url, img, note }: CardsProps) {
   const hasNote = !!note;
 
   return (
-    <div className="w-auto p-2 bg-white rounded-lg flex flex-col gap-2 overflow-hidden">
+    <div className="w-auto max-w-xs p-2 bg-white rounded-lg flex flex-col gap-2 overflow-hidden">
       {/* Image section */}
       {hasImages && (
         <div className="w-72 h-72 relative bg-white rounded-md overflow-hidden">
@@ -32,7 +32,9 @@ function Cards({ title, description, tags = [], url, img, note }: CardsProps) {
 
       {/* Title */}
       {hasTitle && (
-        <div className="text-2xl font-bold text-black/80">{title}</div>
+        <div className="text-2xl font-bold text-black/80 line-clamp-2">
+          {title}
+        </div>
       )}
 
       {/* Description */}
