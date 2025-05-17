@@ -153,7 +153,7 @@ function App() {
       }
 
       try {
-        const response = await fetch(APIURL + "/save", {
+        const response = await fetch(APIURL + "/cards", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
