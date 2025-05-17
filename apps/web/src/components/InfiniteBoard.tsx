@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import Cards from "./ui/cards";
 import { useGetBoard } from "@/hooks/useGetBoard";
 
@@ -26,7 +26,7 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
   const wheelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch real cards if boardId is present
-  const { cards: fetchedCards, loading, error } = useGetBoard(boardName ?? "");
+  const { loading, error, cards } = useGetBoard(boardName ?? "");
 
   // Generate honeycomb/hex grid if no board is selected (demo)
   useEffect(() => {
@@ -87,16 +87,16 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
   }, [scale]);
 
   // Helper to stop inertia
-  const stopInertia = () => {
+  const stopInertia = useCallback(() => {
     if (inertiaFrame.current) {
       cancelAnimationFrame(inertiaFrame.current);
       inertiaFrame.current = null;
     }
     velocity.current = { x: 0, y: 0 };
-  };
+  }, []);
 
-  // Inertia animation
-  const startInertia = () => {
+  // Inertia animation (memoized)
+  const startInertia = useCallback(() => {
     const friction = 0.92; // Lower = more friction
     const minVelocity = 0.5; // px/frame
 
@@ -120,7 +120,7 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
     }
 
     inertiaFrame.current = requestAnimationFrame(animate);
-  };
+  }, [setOffset, stopInertia]);
 
   // Gestion du drag (pan)
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -152,53 +152,66 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
    * - Pinch or wheel+ctrl = zoom, centered on cursor.
    * - Prevent browser zoom.
    */
-  const handleWheel = (e: React.WheelEvent) => {
-    stopInertia(); // Stop inertia on new wheel
-    // Pinch-to-zoom (trackpad) or wheel+ctrl (browser zoom gesture)
-    if (e.ctrlKey || e.metaKey) {
+  const handleWheel = useCallback(
+    (e: WheelEvent) => {
+      stopInertia(); // Stop inertia on new wheel
+      // Pinch-to-zoom (trackpad) or wheel+ctrl (browser zoom gesture)
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        // Calculate zoom factor
+        let newScale = scale - e.deltaY * SCALE_STEP * 0.01;
+        newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+        // Zoom centered on cursor
+        const rect = boardRef.current?.getBoundingClientRect();
+        if (rect) {
+          const cursorX = e.clientX - rect.left;
+          const cursorY = e.clientY - rect.top;
+          const relX = (cursorX - offset.x - rect.width / 2) / scale;
+          const relY = (cursorY - offset.y - rect.height / 2) / scale;
+          const scaleRatio = newScale / scale;
+          setOffset((prev) => ({
+            x: prev.x - relX * (scaleRatio - 1) * scale,
+            y: prev.y - relY * (scaleRatio - 1) * scale,
+          }));
+        }
+        setScale(newScale);
+        return;
+      }
+
+      // Pan (trackpad two-finger scroll or mouse wheel)
       e.preventDefault();
-      // Calculate zoom factor
-      let newScale = scale - e.deltaY * SCALE_STEP * 0.01;
-      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      setOffset((prev) => ({
+        x: prev.x - e.deltaX,
+        y: prev.y - e.deltaY,
+      }));
+      // Track velocity for inertia (invert sign to match movement)
+      velocity.current = { x: -e.deltaX, y: -e.deltaY };
 
-      // Zoom centered on cursor
-      const rect = boardRef.current?.getBoundingClientRect();
-      if (rect) {
-        const cursorX = e.clientX - rect.left;
-        const cursorY = e.clientY - rect.top;
-        const relX = (cursorX - offset.x - rect.width / 2) / scale;
-        const relY = (cursorY - offset.y - rect.height / 2) / scale;
-        const scaleRatio = newScale / scale;
-        setOffset((prev) => ({
-          x: prev.x - relX * (scaleRatio - 1) * scale,
-          y: prev.y - relY * (scaleRatio - 1) * scale,
-        }));
-      }
-      setScale(newScale);
-      return;
-    }
+      // Start inertia on wheel end (debounced)
+      if (inertiaFrame.current) cancelAnimationFrame(inertiaFrame.current);
+      if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
+      wheelTimeoutRef.current = setTimeout(() => {
+        if (
+          Math.abs(velocity.current.x) > 1 ||
+          Math.abs(velocity.current.y) > 1
+        ) {
+          startInertia();
+        }
+      }, 40); // 40ms after last wheel event
+    },
+    [scale, offset, startInertia]
+  );
 
-    // Pan (trackpad two-finger scroll or mouse wheel)
-    e.preventDefault();
-    setOffset((prev) => ({
-      x: prev.x - e.deltaX,
-      y: prev.y - e.deltaY,
-    }));
-    // Track velocity for inertia (invert sign to match movement)
-    velocity.current = { x: -e.deltaX, y: -e.deltaY };
-
-    // Start inertia on wheel end (debounced)
-    if (inertiaFrame.current) cancelAnimationFrame(inertiaFrame.current);
-    if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
-    wheelTimeoutRef.current = setTimeout(() => {
-      if (
-        Math.abs(velocity.current.x) > 1 ||
-        Math.abs(velocity.current.y) > 1
-      ) {
-        startInertia();
-      }
-    }, 40); // 40ms after last wheel event
-  };
+  // Attach wheel event manually to allow preventDefault
+  useEffect(() => {
+    const node = boardRef.current;
+    if (!node) return;
+    node.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      node.removeEventListener("wheel", handleWheel);
+    };
+  }, [handleWheel]);
 
   // Canvas grid ref
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -257,19 +270,20 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
     }
   }, [offset, scale]);*/
 
-  // Helper to calculate honeycomb/hex grid position for each card
-  const cardWidth = 180; // px, adjust to your card size
-  const cardHeight = 180; // px, adjust to your card size
-  const spacingX = cardWidth * 1.1;
-  const spacingY = cardHeight * 0.95;
-  const cols = 5; // Number of columns in the honeycomb
+  // Grille régulière (non responsive, board infini)
+  const cols = 5; // nombre de colonnes fixe
+  const cardWidth = 288; // px (w-72)
+  const cardHeight = 420; // px (hauteur totale estimée d'une card)
+  const spacingX = cardWidth + 56; // 56px d'écart horizontal
+  const spacingY = cardHeight + 56; // 56px d'écart vertical
 
-  function getHexPosition(idx: number) {
+  function getGridPosition(idx: number) {
     const row = Math.floor(idx / cols);
     const col = idx % cols;
-    const x = col * spacingX + (row % 2 === 1 ? spacingX / 2 : 0);
-    const y = row * spacingY;
-    return { x, y };
+    return {
+      x: col * spacingX,
+      y: row * spacingY,
+    };
   }
 
   return (
@@ -280,7 +294,6 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
       tabIndex={0}
     >
       {/* Show loading message when fetching cards */}
@@ -321,14 +334,14 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
         />
         {/* Render cards at their logical board positions */}
         {!boardName ? (
-          <div className="flex items-center justify-center w-full h-full">
-            <div className="bg-white bg-opacity-80 px-6 py-4 rounded-lg shadow text-gray-500 text-lg font-medium">
-              Select a board to display cards.
-            </div>
+          <div className="text-gray-400 text-xl font-medium select-none pointer-events-none">
+            Select a board to display cards.
           </div>
         ) : (
-          fetchedCards.map((card, idx) => {
-            const { x, y } = getHexPosition(idx);
+          cards &&
+          cards.length > 0 &&
+          cards.map((card, idx) => {
+            const { x, y } = getGridPosition(idx);
             return (
               <div
                 key={card.id}
@@ -336,7 +349,7 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
                   transform: `translate(${x}px, ${y}px)`,
                   position: "absolute",
                 }}
-                className="transition-transform duration-200 hover:scale-110"
+                className="transition-transform duration-200"
               >
                 <Cards
                   title={card.title ?? ""}
