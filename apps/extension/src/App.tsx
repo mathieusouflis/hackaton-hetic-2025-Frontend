@@ -269,12 +269,12 @@ function App() {
                 Ajouter une image
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-full">
               <DialogHeader>
                 <DialogTitle>Ajouter une image</DialogTitle>
               </DialogHeader>
-              <div className="flex flex-col gap-4">
-                <div>
+              <div className="flex flex-col gap-4 w-full">
+                <div className="w-full">
                   <p className="mb-2 text-sm text-gray-400">
                     Insérer l'URL d'une image
                   </p>
@@ -283,7 +283,7 @@ function App() {
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     rows={1}
-                    className="resize-none h-10"
+                    className="resize-none h-10 w-full"
                   />
                 </div>
                 <Button
