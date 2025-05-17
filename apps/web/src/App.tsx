@@ -8,7 +8,7 @@ function App() {
   return (
     <div>
       <HUD selectedBoard={selectedBoard} onBoardChange={setSelectedBoard} />
-      <InfiniteBoard boardId={selectedBoard} />
+      <InfiniteBoard boardName={selectedBoard} />
     </div>
   );
 }

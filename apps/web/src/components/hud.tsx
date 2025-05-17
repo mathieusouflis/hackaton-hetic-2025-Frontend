@@ -31,7 +31,7 @@ export default function HUD({ selectedBoard, onBoardChange }: HUDProps) {
           </SelectTrigger>
           <SelectContent>
             {boards.map((board) => (
-              <SelectItem key={board.name} value={board.id}>
+              <SelectItem key={board.name} value={board.name}>
                 {board.name}
               </SelectItem>
             ))}

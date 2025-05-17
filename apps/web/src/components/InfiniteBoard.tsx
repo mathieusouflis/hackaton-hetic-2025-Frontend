@@ -10,10 +10,10 @@ const MAX_SCALE = 2.5;
 const SCALE_STEP = 0.08;
 
 interface InfiniteBoardProps {
-  boardId: string | null;
+  boardName: string | null;
 }
 
-export default function InfiniteBoard({ boardId }: InfiniteBoardProps) {
+export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -30,11 +30,11 @@ export default function InfiniteBoard({ boardId }: InfiniteBoardProps) {
   >([]);
 
   // Fetch real cards if boardId is present
-  const { cards: fetchedCards, loading, error } = useGetBoard(boardId ?? "");
+  const { cards: fetchedCards, loading, error } = useGetBoard(boardName ?? "");
 
   // Generate honeycomb/hex grid if no board is selected (demo)
   useEffect(() => {
-    if (boardId) {
+    if (boardName) {
       setCards([]);
       return;
     }
@@ -60,7 +60,7 @@ export default function InfiniteBoard({ boardId }: InfiniteBoardProps) {
       }
     }
     setCards(hexCards);
-  }, [boardId]);
+  }, [boardName]);
 
   // --- SMART GRID LOGIC (Miro/Figma style) ---
 
@@ -278,7 +278,7 @@ export default function InfiniteBoard({ boardId }: InfiniteBoardProps) {
       tabIndex={0}
     >
       {/* Show loading message when fetching cards */}
-      {boardId && loading && (
+      {boardName && loading && (
         <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
           <div className="bg-white bg-opacity-80 px-6 py-4 rounded-lg shadow text-gray-500 text-lg font-medium">
             Loading board...
@@ -286,7 +286,7 @@ export default function InfiniteBoard({ boardId }: InfiniteBoardProps) {
         </div>
       )}
       {/* Show error message if there is an error */}
-      {boardId && error && (
+      {boardName && error && (
         <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
           <div className="bg-red-100 bg-opacity-90 px-6 py-4 rounded-lg shadow text-red-600 text-lg font-medium">
             Error loading board: {error.message}
@@ -314,7 +314,7 @@ export default function InfiniteBoard({ boardId }: InfiniteBoardProps) {
           }}
         />
         {/* Render cards at their logical board positions */}
-        {boardId
+        {boardName
           ? fetchedCards.map((card, idx) => (
               <div
                 key={card.id}
