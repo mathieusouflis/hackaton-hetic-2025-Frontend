@@ -56,6 +56,12 @@ function App() {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [boards, setBoards] = useState<{ id: string; name: string }[]>([]);
+  const [selectedBoard, setSelectedBoard] = useState<string>("");
+  const [boardsLoading, setBoardsLoading] = useState<boolean>(true);
+  const [boardsError, setBoardsError] = useState<string | null>(null);
+
+  const APIURL = "http://localhost:5005/api/";
 
   useEffect(() => {
     try {
@@ -105,6 +111,26 @@ function App() {
 
     window.addEventListener("message", handleMessage);
 
+    // Fetch boards
+    const fetchBoards = async () => {
+      try {
+        setBoardsLoading(true);
+        const response = await fetch(APIURL +"/boards");
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        setBoards(data);
+        setBoardsError(null);
+        if (data.length > 0) setSelectedBoard(data[0].name);
+      } catch (err: any) {
+        setBoardsError(err.message || "Erreur lors du chargement des boards");
+      } finally {
+        setBoardsLoading(false);
+      }
+    };
+    fetchBoards();
+
     return () => {
       window.removeEventListener("message", handleMessage);
     };
@@ -121,6 +147,7 @@ function App() {
         images: images,
         url: currentUrl,
         date: new Date().toISOString(),
+        board_name: selectedBoard,
       };
 
       if (chrome && chrome.storage) {
@@ -130,7 +157,7 @@ function App() {
       }
 
       try {
-        const response = await fetch("https://api.example.com/save", {
+        const response = await fetch(APIURL + "/save", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -403,19 +430,28 @@ function App() {
               <Plus /> Tag
             </Button>
           </div>
-          <div className="flex flex-row justify-between w-full">
+          <div className="flex flex-row justify-between w-full items-center gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  {boardsLoading ? "Chargement..." : selectedBoard || "Choisir un board"}
+                </Button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>Choisir un board</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
-                <DropdownMenuItem>Team</DropdownMenuItem>
-                <DropdownMenuItem>Subscription</DropdownMenuItem>
+                {boardsError && <DropdownMenuItem disabled>{boardsError}</DropdownMenuItem>}
+                {boards.map((board) => (
+                  <DropdownMenuItem
+                    key={board.id}
+                    onClick={() => setSelectedBoard(board.name)}
+                  >
+                    {board.name}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={isSending || !selectedBoard}>
               <Send /> Send
             </Button>
           </div>

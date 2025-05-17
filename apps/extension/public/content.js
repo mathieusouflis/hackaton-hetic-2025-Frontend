@@ -149,15 +149,19 @@ class SelectionTooltip {
       case "save":
         console.log("Saving text:", this.selectedText);
         if (this.selectedText) {
-          // Sauvegarde dans le storage
-          if (chrome && chrome.storage) {
-            chrome.storage.local.set({ selectedText: this.selectedText }, function () {
-              console.log("Text saved to storage from tooltip");
-            });
-          } else {
-            localStorage.setItem("textSelected", this.selectedText);
+          try {
+            if (chrome && chrome.storage) {
+              chrome.storage.local.set({ selectedText: this.selectedText }, function () {
+                console.log("Text saved to storage from tooltip");
+              });
+            } else {
+              localStorage.setItem("textSelected", this.selectedText);
+            }
+            this.openOverlay(this.selectedText);
+          } catch (e) {
+            showNotification("Extension context invalidé. Recharge la page.");
+            console.error("Extension context invalidated:", e);
           }
-          this.openOverlay(this.selectedText);
         } else {
           console.error("No text selected!");
         }
@@ -172,46 +176,50 @@ class SelectionTooltip {
   openOverlay(selectedText) {
     console.log("Opening overlay with text:", selectedText);
 
-    
     const existingOverlay = document.getElementById("custom-modal-overlay");
     if (existingOverlay) {
       existingOverlay.remove();
     }
 
-    
-    const overlay = document.createElement("iframe");
-    
-    overlay.src = chrome.runtime.getURL("index.html");
-    overlay.style.position = "fixed";
-    overlay.style.top = "0";
-    overlay.style.left = "0";
-    overlay.style.width = "100vw";
-    overlay.style.height = "100vh";
-    overlay.style.border = "none";
-    overlay.style.background = "rgba(0,0,0,0.5)";
-    overlay.style.zIndex = "2147483647";
-    overlay.id = "custom-modal-overlay";
-    console.log("Ajout de l'iframe au DOM", overlay);
-    document.body.appendChild(overlay);
+    try {
+      const overlay = document.createElement("iframe");
+      overlay.src = chrome.runtime.getURL("index.html");
+      overlay.style.position = "fixed";
+      overlay.style.top = "0";
+      overlay.style.left = "0";
+      overlay.style.width = "100vw";
+      overlay.style.height = "100vh";
+      overlay.style.border = "none";
+      overlay.style.background = "rgba(0,0,0,0.5)";
+      overlay.style.zIndex = "2147483647";
+      overlay.id = "custom-modal-overlay";
+      console.log("Ajout de l'iframe au DOM", overlay);
+      document.body.appendChild(overlay);
 
-    overlay.addEventListener("load", () => {
-      console.log("Overlay loaded, sending text:", selectedText);
-      try {
-        overlay.contentWindow.postMessage(
-          {
-            type: "FROM_CONTENT_SCRIPT",
-            text: selectedText,
-          },
-          "*"
-        );
-      } catch (error) {
-        console.error("Error sending message to iframe:", error);
-      }
-    });
+      overlay.addEventListener("load", () => {
+        console.log("Overlay loaded, sending text:", selectedText);
+        try {
+          overlay.contentWindow.postMessage(
+            {
+              type: "FROM_CONTENT_SCRIPT",
+              text: selectedText,
+            },
+            "*"
+          );
+        } catch (error) {
+          showNotification("Impossible d'envoyer le texte au modal.");
+          console.error("Error sending message to iframe:", error);
+        }
+      });
 
-    overlay.addEventListener("error", (error) => {
-      console.error("Error loading iframe:", error);
-    });
+      overlay.addEventListener("error", (error) => {
+        showNotification("Erreur lors du chargement du modal.");
+        console.error("Error loading iframe:", error);
+      });
+    } catch (e) {
+      showNotification("Extension context invalidé. Recharge la page.");
+      console.error("Extension context invalidated:", e);
+    }
   }
 }
 
