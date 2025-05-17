@@ -257,6 +257,21 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
     }
   }, [offset, scale]);*/
 
+  // Helper to calculate honeycomb/hex grid position for each card
+  const cardWidth = 180; // px, adjust to your card size
+  const cardHeight = 180; // px, adjust to your card size
+  const spacingX = cardWidth * 0.85;
+  const spacingY = cardHeight * 0.75;
+  const cols = 5; // Number of columns in the honeycomb
+
+  function getHexPosition(idx: number) {
+    const row = Math.floor(idx / cols);
+    const col = idx % cols;
+    const x = col * spacingX + (row % 2 === 1 ? spacingX / 2 : 0);
+    const y = row * spacingY;
+    return { x, y };
+  }
+
   return (
     <div
       ref={boardRef}
@@ -305,34 +320,50 @@ export default function InfiniteBoard({ boardName }: InfiniteBoardProps) {
           }}
         />
         {/* Render cards at their logical board positions */}
-        {boardName ? (
-          fetchedCards.map((card, idx) => (
-            <div
-              key={card.id}
-              style={{
-                // Spread cards out in a grid for now (replace with real positions if available)
-                transform: `translate(${(idx % 5) * 350}px, ${
-                  Math.floor(idx / 5) * 350
-                }px)`,
-                position: "absolute",
-              }}
-            >
-              <Cards
-                title={card.title ?? ""}
-                description={card.text ?? ""}
-                tags={card.tags ?? []}
-                url={card.url ?? ""}
-                images={card.img ? [card.img] : []}
-              />
-            </div>
-          ))
-        ) : (
-          <div className="flex items-center justify-center w-full h-full">
-            <div className="bg-white bg-opacity-80 px-6 py-4 rounded-lg shadow text-gray-500 text-lg font-medium">
-              Select a board to display cards.
-            </div>
-          </div>
-        )}
+        {boardName
+          ? fetchedCards.map((card, idx) => {
+              const { x, y } = getHexPosition(idx);
+              return (
+                <div
+                  key={card.id}
+                  style={{
+                    transform: `translate(${x}px, ${y}px)`,
+                    position: "absolute",
+                  }}
+                  className="transition-transform duration-200 hover:scale-110"
+                >
+                  <Cards
+                    title={card.title ?? ""}
+                    description={card.text ?? ""}
+                    tags={card.tags ?? []}
+                    url={card.url ?? ""}
+                    images={card.img ? [card.img] : []}
+                  />
+                </div>
+              );
+            })
+          : // Demo: show 10 cards in honeycomb
+            Array.from({ length: 10 }).map((_, idx) => {
+              const { x, y } = getHexPosition(idx);
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    transform: `translate(${x}px, ${y}px)`,
+                    position: "absolute",
+                  }}
+                  className="transition-transform duration-200 hover:scale-110"
+                >
+                  <Cards
+                    title={`App ${idx + 1}`}
+                    description={"Demo card"}
+                    tags={["demo", "tag"]}
+                    url={"https://example.com"}
+                    images={[]}
+                  />
+                </div>
+              );
+            })}
         {/* Placeholder for board center */}
         {/* <div className="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
           Board infini
