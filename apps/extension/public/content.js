@@ -1,5 +1,3 @@
-
-
 class SelectionTooltip {
   constructor() {
     this.tooltip = null;
@@ -151,6 +149,14 @@ class SelectionTooltip {
       case "save":
         console.log("Saving text:", this.selectedText);
         if (this.selectedText) {
+          // Sauvegarde dans le storage
+          if (chrome && chrome.storage) {
+            chrome.storage.local.set({ selectedText: this.selectedText }, function () {
+              console.log("Text saved to storage from tooltip");
+            });
+          } else {
+            localStorage.setItem("textSelected", this.selectedText);
+          }
           this.openOverlay(this.selectedText);
         } else {
           console.error("No text selected!");
