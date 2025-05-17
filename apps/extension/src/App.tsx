@@ -140,7 +140,7 @@ function App() {
         text: selectedText,
         note: note,
         tags: tags,
-        image: imageUrl,
+        img: imageUrl,
         url: currentUrl,
         date: new Date().toISOString(),
         board_name: selectedBoard,
@@ -212,7 +212,9 @@ function App() {
   };
 
   return (
-    <>
+    <
+      
+    >
       <Card className="w-lg flex flex-col">
         <CardHeader className="w-full flex flex-row justify-end">
           <Button variant="ghost" onClick={handleCancel}>
