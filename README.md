@@ -1,4 +1,4 @@
-UNFAIR (Sujet 2) - Panoramix Front-end
+# Team UNFAIR (Sujet 2) - Panoramix Front-end
 
 ## Description du projet
 
