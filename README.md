@@ -40,6 +40,8 @@ L'extension permet aux utilisateurs de sauvegarder divers éléments depuis le w
 ## Installation & Lancement
 
 ### Pré-requis
+Avoir lancer le back-end:
+https://github.com/fouuuadi/Hackathon_AWS_2025
 
 Assurez-vous d'avoir **Node.js** et **npm** installés sur votre machine.
 
